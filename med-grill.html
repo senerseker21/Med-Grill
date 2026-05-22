@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Med-Grill – Speisekarte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--red:#e8281a;--orange:#ff6b2b;--yellow:#ffc107;--bg:#fffdf5;--card:#ffffff;--text:#1a1a1a;--muted:#777;--border:#f0e8d0;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;}
+
+    /* FIX: Zahlen-Rendering – verhindert dass 7 wie 1 aussieht */
+    * { font-feature-settings: "kern" 1, "liga" 1; -webkit-font-smoothing: antialiased; }
+    .item-price, .p1, .p2, .drink-price {
+      font-variant-numeric: tabular-nums;
+      font-kerning: normal;
+      letter-spacing: 0.02em;
+    }
+
+    .hero{background:linear-gradient(135deg,#e8281a 0%,#ff6b2b 50%,#ffc107 100%);padding:3rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+    .hero-badge{display:inline-block;background:rgba(255,255,255,.2);color:#fff;border:2px solid rgba(255,255,255,.4);border-radius:30px;padding:.4rem 1.2rem;font-size:.85rem;font-weight:700;letter-spacing:.1em;margin-bottom:1rem;text-transform:uppercase;}
+    .hero h1{font-family:'Bangers',cursive;font-size:clamp(3.5rem,12vw,7rem);color:#fff;letter-spacing:.05em;line-height:1;text-shadow:4px 4px 0 rgba(0,0,0,.2);margin-bottom:.5rem;}
+    .hero .tagline{color:rgba(255,255,255,.9);font-size:1.1rem;font-weight:600;margin-bottom:1.5rem;}
+    .hero-info{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;}
+    .hero-pill{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);color:#fff;border-radius:20px;padding:.4rem 1rem;font-size:.85rem;font-weight:700;}
+    .photo-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;padding:1.5rem 1rem .5rem;max-width:900px;margin:0 auto;}
+    .photo-card{border-radius:16px;overflow:hidden;aspect-ratio:1;position:relative;box-shadow:0 4px 18px rgba(0,0,0,.12);transition:transform .3s,box-shadow .3s;}
+    .photo-card:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 10px 28px rgba(0,0,0,.18);}
+    .photo-card svg{width:100%;height:100%;display:block;}
+    .photo-card .label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font-weight:800;font-size:.85rem;padding:.8rem .6rem .5rem;text-align:center;}
+    .category-nav{position:sticky;top:0;z-index:100;background:#fff;border-bottom:3px solid var(--yellow);padding:.8rem 1rem;display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;}
+    .category-nav::-webkit-scrollbar{display:none;}
+    .nav-btn{white-space:nowrap;padding:.5rem 1.1rem;border-radius:20px;border:2px solid var(--border);background:#fff;color:var(--text);font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .2s;}
+    .nav-btn:hover,.nav-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+    main{max-width:900px;margin:0 auto;padding:2rem 1rem 4rem;}
+    .menu-section{margin-bottom:3rem;animation:fadeUp .5s ease both;}
+    .section-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;}
+    .section-icon{font-size:2rem;width:56px;height:56px;background:linear-gradient(135deg,var(--red),var(--orange));border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(232,40,26,.3);}
+    .section-title{font-family:'Bangers',cursive;font-size:2rem;letter-spacing:.05em;color:var(--red);}
+    .section-subtitle{font-size:.85rem;color:var(--muted);font-weight:600;}
+    .items-grid{display:grid;gap:.75rem;}
+    .menu-item{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:1rem;transition:border-color .2s,box-shadow .2s,transform .2s;}
+    .menu-item:hover{border-color:var(--orange);box-shadow:0 4px 16px rgba(255,107,43,.15);transform:translateY(-2px);}
+    .item-num{font-family:'Bangers',cursive;font-size:1.1rem;color:var(--orange);min-width:36px;padding-top:1px;}
+    .item-body{flex:1;}
+    .item-name{font-weight:800;font-size:.95rem;color:var(--text);margin-bottom:.2rem;}
+    .item-desc{font-size:.8rem;color:var(--muted);line-height:1.5;}
+    .item-price{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.2rem;color:var(--red);white-space:nowrap;padding-top:1px;}
+    .price-two{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;min-width:110px;}
+    .price-two .p1{font-family:'Nunito',sans-serif;font-weight:900;font-size:.95rem;color:var(--orange);white-space:nowrap;}
+    .price-two .p2{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.05rem;color:var(--red);white-space:nowrap;}
+    .plabel{display:inline-block;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:#aaa;border-radius:4px;padding:.05rem .3rem;margin-right:.25rem;vertical-align:middle;}
+    .callout{background:linear-gradient(135deg,#fff8e1,#fff3cd);border:2px dashed var(--yellow);border-radius:14px;padding:1rem 1.2rem;font-size:.9rem;font-weight:700;color:#856404;margin-bottom:1rem;}
+    .drinks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;}
+    .drink-card{background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:2px solid #90caf9;border-radius:14px;padding:1rem;text-align:center;transition:transform .2s;}
+    .drink-card:hover{transform:translateY(-3px);}
+    .drink-icon{font-size:1.8rem;margin-bottom:.4rem;}
+    .drink-name{font-weight:800;font-size:.9rem;}
+    .drink-price{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;color:#1565c0;}
+    /* BEWERTUNGEN */
+    .review-form-box{background:#fff;border:2px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;}
+    .review-form-box h3{font-family:'Bangers',cursive;font-size:1.6rem;color:var(--red);margin-bottom:1rem;letter-spacing:.04em;}
+    .star-row{display:flex;gap:.3rem;margin-bottom:1rem;font-size:2rem;cursor:pointer;user-select:none;}
+    .star-row span{transition:transform .15s;}
+    .star-row span:hover{transform:scale(1.2);}
+    .form-input{width:100%;border:2px solid var(--border);border-radius:10px;padding:.7rem 1rem;font-family:'Nunito',sans-serif;font-size:.95rem;margin-bottom:.75rem;outline:none;transition:border-color .2s;}
+    .form-input:focus{border-color:var(--orange);}
+    .btn-submit{background:linear-gradient(135deg,var(--red),var(--orange));color:#fff;border:none;border-radius:10px;padding:.75rem 2rem;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;transition:opacity .2s;}
+    .btn-submit:hover{opacity:.88;}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+    .reviews-list{display:flex;flex-direction:column;gap:.9rem;}
+    .review-card{background:#fff;border:2px solid var(--border);border-radius:14px;padding:1rem 1.2rem;position:relative;animation:fadeUp .4s ease both;}
+    .rc-header{display:flex;align-items:center;gap:.8rem;margin-bottom:.4rem;}
+    .rc-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--orange));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1rem;flex-shrink:0;}
+    .rc-name{font-weight:800;font-size:.95rem;}
+    .rc-date{font-size:.75rem;color:var(--muted);}
+    .rc-stars{color:#f39c12;font-size:1.1rem;margin-bottom:.3rem;}
+    .rc-text{font-size:.9rem;color:var(--text);line-height:1.55;}
+    .btn-delete{position:absolute;top:.8rem;right:.8rem;background:none;border:none;cursor:pointer;font-size:1.1rem;opacity:.4;transition:opacity .2s;}
+    .btn-delete:hover{opacity:1;}
+    .no-reviews{text-align:center;color:var(--muted);font-size:.95rem;padding:2rem 0;}
+    .avg-box{display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#fff8e1,#fff3cd);border:2px solid var(--yellow);border-radius:14px;padding:1rem 1.5rem;margin-bottom:1.5rem;}
+    .avg-num{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.8rem;color:var(--red);line-height:1;}
+    .avg-stars{color:#f39c12;font-size:1.4rem;}
+    .avg-count{font-size:.85rem;color:var(--muted);font-weight:700;}
+    .admin-bar{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin-bottom:1.2rem;}
+    .admin-input{border:2px solid var(--border);border-radius:10px;padding:.5rem .9rem;font-family:'Nunito',sans-serif;font-size:.9rem;outline:none;width:200px;}
+    .admin-input:focus{border-color:var(--orange);}
+    .btn-admin{background:#2d2d2d;color:#fff;border:none;border-radius:10px;padding:.5rem 1.2rem;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;}
+    .btn-admin:hover{background:#111;}
+    .admin-msg{font-size:.82rem;font-weight:700;padding:.3rem .7rem;border-radius:8px;}
+    .admin-msg.ok{background:#d4edda;color:#155724;}
+    .admin-msg.err{background:#f8d7da;color:#721c24;}
+    .badge-admin{background:var(--red);color:#fff;border-radius:20px;padding:.25rem .8rem;font-size:.78rem;font-weight:800;}
+    .spam-msg{background:#fff3cd;border:1.5px solid var(--yellow);border-radius:10px;padding:.6rem 1rem;font-size:.85rem;font-weight:700;color:#856404;margin-bottom:.8rem;display:none;}
+    footer{background:linear-gradient(135deg,#1a1a1a,#2d2d2d);color:#fff;text-align:center;padding:2.5rem 1.5rem;}
+    footer h2{font-family:'Bangers',cursive;font-size:2rem;color:var(--yellow);letter-spacing:.05em;margin-bottom:1rem;}
+    .footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;max-width:700px;margin:0 auto 1.5rem;}
+    .footer-block h3{color:var(--orange);font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;}
+    .footer-block p{font-size:.9rem;line-height:1.7;color:#ccc;}
+    .footer-tel{font-family:'Bangers',cursive;font-size:2rem;color:var(--yellow);letter-spacing:.05em;margin-bottom:.5rem;}
+    .footer-note{font-size:.8rem;color:#666;margin-top:1.5rem;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:600px){.photo-strip{grid-template-columns:repeat(2,1fr)}.price-two{min-width:80px}}
+  </style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">🍽️ Willkommen bei</div>
+  <h1>Med-Grill</h1>
+  <p class="tagline">Döner · Pizza · Pasta · Schnitzel · Indische Gerichte</p>
+  <div class="hero-info">
+    <span class="hero-pill">📞 036 026 / 97 5 88</span>
+    <span class="hero-pill">🕐 Mo–Fr 11:00–21:30 &nbsp;|&nbsp; Sa–So 14:00–21:30</span>
+    <span class="hero-pill">🚚 Lieferung ab 50 € nach Absprache</span>
+  </div>
+</div>
+
+<div class="photo-strip">
+  <div class="photo-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ff9a3c"/><stop offset="100%" style="stop-color:#e8281a"/></linearGradient><linearGradient id="br1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#f5c97a"/><stop offset="100%" style="stop-color:#d4922a"/></linearGradient></defs><rect width="200" height="200" fill="url(#bg1)"/><ellipse cx="100" cy="155" rx="70" ry="12" fill="rgba(0,0,0,0.15)"/><ellipse cx="100" cy="152" rx="68" ry="10" fill="#f5e6c8"/><ellipse cx="100" cy="145" rx="55" ry="14" fill="url(#br1)"/><rect x="52" y="108" width="96" height="18" rx="4" fill="#c0392b"/><rect x="52" y="108" width="96" height="6" rx="3" fill="#e74c3c"/><rect x="52" y="100" width="96" height="10" rx="3" fill="#27ae60"/><circle cx="70" cy="105" r="4" fill="#e74c3c"/><circle cx="90" cy="103" r="3" fill="#e74c3c"/><circle cx="112" cy="105" r="4" fill="#f39c12"/><circle cx="130" cy="104" r="3" fill="#e74c3c"/><path d="M80 100 Q82 93 80 88" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M110 100 Q112 91 110 86" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="100" cy="95" rx="55" ry="16" fill="url(#br1)"/><ellipse cx="100" cy="90" rx="50" ry="10" fill="#f5c97a"/><circle cx="85" cy="89" r="2" fill="#d4922a"/><circle cx="100" cy="87" r="2" fill="#d4922a"/><circle cx="115" cy="89" r="2" fill="#d4922a"/></svg>
+    <div class="label">Döner</div>
+  </div>
+  <div class="photo-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ff6b2b"/><stop offset="100%" style="stop-color:#cc4400"/></linearGradient><radialGradient id="pz" cx="50%" cy="50%" r="50%"><stop offset="0%" style="stop-color:#f5c97a"/><stop offset="85%" style="stop-color:#e8a93a"/><stop offset="100%" style="stop-color:#c47a1a"/></radialGradient></defs><rect width="200" height="200" fill="url(#bg2)"/><ellipse cx="102" cy="158" rx="60" ry="8" fill="rgba(0,0,0,0.2)"/><circle cx="100" cy="103" r="62" fill="#c47a1a"/><circle cx="100" cy="103" r="58" fill="url(#pz)"/><circle cx="100" cy="103" r="50" fill="#c0392b" opacity="0.85"/><circle cx="100" cy="103" r="46" fill="#f5d76e" opacity="0.9"/><ellipse cx="88" cy="95" rx="14" ry="10" fill="#f9e08a" opacity="0.8"/><ellipse cx="115" cy="108" rx="12" ry="9" fill="#f9e08a" opacity="0.8"/><ellipse cx="95" cy="118" rx="11" ry="8" fill="#f9e08a" opacity="0.8"/><circle cx="82" cy="88" r="9" fill="#8b1a1a"/><circle cx="82" cy="88" r="7" fill="#a83232"/><circle cx="116" cy="95" r="8" fill="#8b1a1a"/><circle cx="116" cy="95" r="6" fill="#a83232"/><circle cx="98" cy="115" r="7" fill="#8b1a1a"/><circle cx="98" cy="115" r="5" fill="#a83232"/><ellipse cx="72" cy="108" rx="7" ry="4" fill="#27ae60" transform="rotate(-30 72 108)"/><ellipse cx="125" cy="118" rx="6" ry="3" fill="#27ae60" transform="rotate(20 125 118)"/></svg>
+    <div class="label">Pizza</div>
+  </div>
+  <div class="photo-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ffc107"/><stop offset="100%" style="stop-color:#e67e22"/></linearGradient></defs><rect width="200" height="200" fill="url(#bg3)"/><ellipse cx="102" cy="163" rx="58" ry="9" fill="rgba(0,0,0,0.2)"/><path d="M38 110 Q38 168 100 168 Q162 168 162 110 Z" fill="#e8e0d0"/><ellipse cx="100" cy="110" rx="62" ry="14" fill="#f0e8d8"/><ellipse cx="100" cy="110" rx="58" ry="11" fill="#fff8f0"/><path d="M55 120 Q70 108 85 120 Q100 132 115 120 Q130 108 145 120" stroke="#f5c97a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M55 128 Q70 116 85 128 Q100 140 115 128 Q130 116 145 128" stroke="#e8b84a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M58 136 Q73 124 88 136 Q103 148 118 136 Q133 124 142 136" stroke="#f5c97a" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="100" cy="118" r="22" fill="#c0392b" opacity="0.85"/><circle cx="95" cy="114" r="4" fill="#e74c3c"/><circle cx="106" cy="120" r="3" fill="#e74c3c"/><ellipse cx="108" cy="110" rx="6" ry="3" fill="#27ae60" transform="rotate(25 108 110)"/><path d="M85 88 Q87 78 85 68" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M100 85 Q102 75 100 65" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M115 88 Q117 78 115 68" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+    <div class="label">Pasta</div>
+  </div>
+  <div class="photo-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ff8c42"/><stop offset="100%" style="stop-color:#7b2d00"/></linearGradient><radialGradient id="cs" cx="50%" cy="50%" r="50%"><stop offset="0%" style="stop-color:#f39c12"/><stop offset="100%" style="stop-color:#d35400"/></radialGradient></defs><rect width="200" height="200" fill="url(#bg4)"/><circle cx="30" cy="30" r="20" fill="rgba(255,255,255,0.06)"/><circle cx="170" cy="170" r="25" fill="rgba(255,255,255,0.06)"/><ellipse cx="102" cy="162" rx="56" ry="8" fill="rgba(0,0,0,0.25)"/><path d="M42 112 Q42 166 100 166 Q158 166 158 112 Z" fill="#c0987a"/><ellipse cx="100" cy="112" rx="58" ry="13" fill="#d4aa8a"/><ellipse cx="100" cy="112" rx="53" ry="10" fill="#e8c4a0"/><ellipse cx="100" cy="118" rx="48" ry="40" fill="url(#cs)" opacity="0.95"/><ellipse cx="82" cy="115" rx="13" ry="9" fill="#8b4513" transform="rotate(-15 82 115)"/><ellipse cx="82" cy="115" rx="10" ry="7" fill="#cd853f" transform="rotate(-15 82 115)"/><ellipse cx="118" cy="120" rx="12" ry="8" fill="#8b4513" transform="rotate(10 118 120)"/><ellipse cx="118" cy="120" rx="9" ry="6" fill="#cd853f" transform="rotate(10 118 120)"/><ellipse cx="100" cy="130" rx="11" ry="7" fill="#8b4513"/><ellipse cx="100" cy="130" rx="8" ry="5" fill="#cd853f"/><circle cx="90" cy="108" r="3" fill="#27ae60"/><circle cx="112" cy="112" r="2.5" fill="#27ae60"/><path d="M95 113 Q100 107 105 113 Q108 118 100 120 Q92 118 95 113" fill="rgba(255,255,255,0.5)"/><ellipse cx="148" cy="148" rx="18" ry="12" fill="#f5c97a" transform="rotate(-20 148 148)"/></svg>
+    <div class="label">Indisch</div>
+  </div>
+</div>
+
+<nav class="category-nav">
+  <button class="nav-btn active" onclick="goTo('doener',event)">🥙 Döner</button>
+  <button class="nav-btn" onclick="goTo('salate',event)">🥗 Salate</button>
+  <button class="nav-btn" onclick="goTo('gemuese',event)">🥦 Gemüse</button>
+  <button class="nav-btn" onclick="goTo('pizza',event)">🍕 Pizza</button>
+  <button class="nav-btn" onclick="goTo('pasta',event)">🍝 Pasta</button>
+  <button class="nav-btn" onclick="goTo('schnitzel',event)">🥩 Schnitzel</button>
+  <button class="nav-btn" onclick="goTo('indisch',event)">🍛 Indisch</button>
+  <button class="nav-btn" onclick="goTo('getraenke',event)">🥤 Getränke</button>
+  <button class="nav-btn" onclick="goTo('bewertungen',event)">⭐ Bewertungen</button>
+</nav>
+
+<main>
+
+<!-- DÖNER -->
+<section class="menu-section" id="doener">
+  <div class="section-header"><div class="section-icon">🥙</div><div><div class="section-title">Döner</div><div class="section-subtitle">mit Zaziki-, Spezial-, Kräuter- oder scharfer Soße</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">1</span><div class="item-body"><div class="item-name">Döner vegetarisch</div><div class="item-desc">mit Salat, Gurken, Tomaten, Zwiebeln, Kraut, Käse</div></div><span class="item-price">6,00 €</span></div>
+    <div class="menu-item"><span class="item-num">2</span><div class="item-body"><div class="item-name">Döner im Fladenbrot mit Salat</div><div class="item-desc">Zwiebeln, Tomaten, Gurken, Kraut und Soße</div></div><span class="item-price">6,50 €</span></div>
+    <div class="menu-item"><span class="item-num">3</span><div class="item-body"><div class="item-name">Döner im Fladenbrot mit Käse</div><div class="item-desc">mit Salat, Zwiebeln, Tomaten, Gurken, Kraut, Käse und Soße</div></div><span class="item-price">7,50 €</span></div>
+    <div class="menu-item"><span class="item-num">4</span><div class="item-body"><div class="item-name">Big Döner</div><div class="item-desc">mit EXTRA Fleisch</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">4a</span><div class="item-body"><div class="item-name">Dönerbox mit Salat</div><div class="item-desc">mit Soße und Salat</div></div><span class="item-price">7,00 €</span></div>
+    <div class="menu-item"><span class="item-num">4b</span><div class="item-body"><div class="item-name">Dönerbox mit Pommes</div><div class="item-desc">mit Soße und Pommes</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">5</span><div class="item-body"><div class="item-name">Döner Teller</div><div class="item-desc">mit Salat und Soße</div></div><span class="item-price">9,50 €</span></div>
+    <div class="menu-item"><span class="item-num">6</span><div class="item-body"><div class="item-name">Döner Teller</div><div class="item-desc">mit Salat, Pommes und Soße</div></div><span class="item-price">10,50 €</span></div>
+    <div class="menu-item"><span class="item-num">7</span><div class="item-body"><div class="item-name">Döner Teller mit Käse</div><div class="item-desc">Salat, Pommes und Soße</div></div><span class="item-price">11,00 €</span></div>
+    <div class="menu-item"><span class="item-num">8</span><div class="item-body"><div class="item-name">Döner überbacken</div><div class="item-desc">Gyros mit Käse überbacken, Fladenbrot</div></div><span class="item-price">10,50 €</span></div>
+    <div class="menu-item"><span class="item-num">8a</span><div class="item-body"><div class="item-name">Hawaiidönerteller</div><div class="item-desc">Schinken, Ananas, Sahnesoße, überbacken</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">9</span><div class="item-body"><div class="item-name">Dönerteller mit Nudeln</div><div class="item-desc">Dönerfleisch, Nudeln und Salat</div></div><span class="item-price">11,00 €</span></div>
+    <div class="menu-item"><span class="item-num">9b</span><div class="item-body"><div class="item-name">Chicken Nuggets 9 Stück</div><div class="item-desc">mit Pommes und Salat</div></div><span class="item-price">9,50 €</span></div>
+    <div class="menu-item"><span class="item-num">10</span><div class="item-body"><div class="item-name">Dönerrolle</div><div class="item-desc">mit Dönerfleisch, Salat, Zwiebeln, Tomaten, Gurken, Kraut, Soße</div></div><span class="item-price">7,50 €</span></div>
+    <div class="menu-item"><span class="item-num">11</span><div class="item-body"><div class="item-name">Dönerrolle mit Käse</div><div class="item-desc">mit Dönerfleisch, Käse, Salat, Zwiebeln, Tomaten, Gurken, Kraut, Soße</div></div><span class="item-price">8,50 €</span></div>
+    <div class="menu-item"><span class="item-num">12</span><div class="item-body"><div class="item-name">Lahmacun (gerollte Pizza)</div><div class="item-desc">mit Salat, Zwiebeln, Tomaten, Gurken, Kraut, Soße</div></div><span class="item-price">6,50 €</span></div>
+    <div class="menu-item"><span class="item-num">13</span><div class="item-body"><div class="item-name">Lahmacun mit Käse</div><div class="item-desc">mit Salat und Käse</div></div><span class="item-price">7,00 €</span></div>
+    <div class="menu-item"><span class="item-num">14</span><div class="item-body"><div class="item-name">Lahmacun mit Döner</div><div class="item-desc">mit Salat und Dönerfleisch</div></div><span class="item-price">8,50 €</span></div>
+  </div>
+</section>
+
+<!-- SALATE -->
+<section class="menu-section" id="salate">
+  <div class="section-header"><div class="section-icon">🥗</div><div><div class="section-title">Salate</div><div class="section-subtitle">Klein ca. 300 g &nbsp;|&nbsp; Groß ca. 500 g</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">15</span><div class="item-body"><div class="item-name">Gemischter Salat</div><div class="item-desc">Kopfsalat, Zwiebeln, Tomaten, Gurken</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>5,50 €</span><span class="p2"><span class="plabel">groß</span>6,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">16</span><div class="item-body"><div class="item-name">Thunfischsalat</div><div class="item-desc">gemischter Salat mit Thunfisch</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>6,50 €</span><span class="p2"><span class="plabel">groß</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">17</span><div class="item-body"><div class="item-name">Hirtensalat</div><div class="item-desc">gemischter Salat, Käse</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>6,00 €</span><span class="p2"><span class="plabel">groß</span>7,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">18</span><div class="item-body"><div class="item-name">Romana-Salat</div><div class="item-desc">gemischter Salat, Käse, Knoblauch, Thunfisch, Meeresfrüchte</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>7,50 €</span><span class="p2"><span class="plabel">groß</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">19</span><div class="item-body"><div class="item-name">Hawaii-Salat</div><div class="item-desc">gemischter Salat, Schinken, Käse, Ananas</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>6,00 €</span><span class="p2"><span class="plabel">groß</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">20</span><div class="item-body"><div class="item-name">Italia-Salat</div><div class="item-desc">gemischter Salat, Käse, Schinken, Thunfisch, Ei</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>7,00 €</span><span class="p2"><span class="plabel">groß</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">21</span><div class="item-body"><div class="item-name">MED-Salat</div><div class="item-desc">Kopfsalat, Tomaten, Gurken, Zwiebeln, Käse, Dönerfleisch, Soße</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>7,50 €</span><span class="p2"><span class="plabel">groß</span>9,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">22</span><div class="item-body"><div class="item-name">Salat mit Mais</div><div class="item-desc">Kopfsalat, Tomaten, Gurken, Schinken, Käse, Mais</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>6,50 €</span><span class="p2"><span class="plabel">groß</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">23</span><div class="item-body"><div class="item-name">Salat Boston</div><div class="item-desc">gemischter Salat mit gebratenen Pilze, Brokkoli, Paprika, Mais, Käse und Soße</div></div><span class="item-price">9,50 €</span></div>
+    <div class="menu-item"><span class="item-num">23a</span><div class="item-body"><div class="item-name">Salat Eigenrieden</div><div class="item-desc">gemischter Salat, Käse, Peperoni, Mozzarella</div></div><div class="price-two"><span class="p1"><span class="plabel">klein</span>6,50 €</span><span class="p2"><span class="plabel">groß</span>8,00 €</span></div></div>
+  </div>
+</section>
+
+<!-- GEMÜSE -->
+<section class="menu-section" id="gemuese">
+  <div class="section-header"><div class="section-icon">🥦</div><div><div class="section-title">Gemüse Überbacken</div><div class="section-subtitle">ohne Gyros / mit Gyros</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">24</span><div class="item-body"><div class="item-name">Broccoli al Forno</div><div class="item-desc">Broccoli mit Sauce Hollandaise und Käse überbacken</div></div><div class="price-two"><span class="p1"><span class="plabel">o.Gyros</span>8,00 €</span><span class="p2"><span class="plabel">m.Gyros</span>10,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">25</span><div class="item-body"><div class="item-name">Spinat al Forno</div><div class="item-desc">Blattspinat, Tomaten-Sahnesoße, Knoblauch, Käse überbacken</div></div><div class="price-two"><span class="p1"><span class="plabel">o.Gyros</span>8,00 €</span><span class="p2"><span class="plabel">m.Gyros</span>10,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">26</span><div class="item-body"><div class="item-name">Funghi alla Gorgonzola</div><div class="item-desc">frische Champignons mit Gorgonzola überbacken</div></div><div class="price-two"><span class="p1"><span class="plabel">o.Gyros</span>8,00 €</span><span class="p2"><span class="plabel">m.Gyros</span>10,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">27</span><div class="item-body"><div class="item-name">Broccoli Küllstedt</div><div class="item-desc">Broccoli mit Pilzen, Artischocken, Tomatensoße, Sahne mit Käse überbacken</div></div><div class="price-two"><span class="p1"><span class="plabel">o.Gyros</span>8,00 €</span><span class="p2"><span class="plabel">m.Gyros</span>10,00 €</span></div></div>
+  </div>
+</section>
+
+<!-- PIZZA -->
+<section class="menu-section" id="pizza">
+  <div class="section-header"><div class="section-icon">🍕</div><div><div class="section-title">Pizza</div><div class="section-subtitle">24 cm / 28 cm · Jumbo 40 cm = doppelter Preis · Familienpizza 60×40 cm = 35,00 €</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">28</span><div class="item-body"><div class="item-name">Pizza Margherita</div><div class="item-desc">Tomatensoße, Käse</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>6,00 €</span><span class="p2"><span class="plabel">28 cm</span>7,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">29</span><div class="item-body"><div class="item-name">Pizza Salami</div><div class="item-desc">Tomatensoße, Käse, Salami</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>6,50 €</span><span class="p2"><span class="plabel">28 cm</span>7,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">30</span><div class="item-body"><div class="item-name">Pizza Funghi</div><div class="item-desc">Tomatensoße, Käse, Pilze</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>6,50 €</span><span class="p2"><span class="plabel">28 cm</span>7,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">31</span><div class="item-body"><div class="item-name">Pizza Schinken</div><div class="item-desc">Tomatensoße, Käse, Schinken</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>6,50 €</span><span class="p2"><span class="plabel">28 cm</span>7,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">32</span><div class="item-body"><div class="item-name">Pizza Salami-Zwiebeln</div><div class="item-desc">Tomatensoße, Käse, Salami, Zwiebeln</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,00 €</span><span class="p2"><span class="plabel">28 cm</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">33</span><div class="item-body"><div class="item-name">Pizza Schinken-Pilze</div><div class="item-desc">Tomatensoße, Käse, Schinken, Pilze</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,00 €</span><span class="p2"><span class="plabel">28 cm</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">34</span><div class="item-body"><div class="item-name">Pizza Salami-Pilze</div><div class="item-desc">Tomatensoße, Käse, Salami, Pilze</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,00 €</span><span class="p2"><span class="plabel">28 cm</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">35</span><div class="item-body"><div class="item-name">Pizza Büttstedt</div><div class="item-desc">Salami, Schinken, Pilze, Tomatensoße, Käse</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">35a</span><div class="item-body"><div class="item-name">Pizza Eigenrieden</div><div class="item-desc">Tomatensoße, Käse, Schinken, Broccoli, Mais</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">35b</span><div class="item-body"><div class="item-name">Pizza Faulungen</div><div class="item-desc">Tomatensoße, Käse, Thunfisch, Meeresfrüchte, Knoblauch</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>8,00 €</span><span class="p2"><span class="plabel">28 cm</span>9,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">35c</span><div class="item-body"><div class="item-name">Pizza al Salmone</div><div class="item-desc">Tomatensoße, Käse, Lachs, Spinat, Knoblauch</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>8,00 €</span><span class="p2"><span class="plabel">28 cm</span>9,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">36</span><div class="item-body"><div class="item-name">Pizza Bolognese</div><div class="item-desc">Fleischsoße</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>6,50 €</span><span class="p2"><span class="plabel">28 cm</span>7,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">37</span><div class="item-body"><div class="item-name">Pizza Hawaii</div><div class="item-desc">Schinken, Ananas, Tomatensoße, Käse</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,00 €</span><span class="p2"><span class="plabel">28 cm</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">38</span><div class="item-body"><div class="item-name">Pizza Toscana</div><div class="item-desc">Tomatensoße, Käse, Salami, Schinken, Pilze, Zwiebeln, Peperoniwurst</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>8,00 €</span><span class="p2"><span class="plabel">28 cm</span>9,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">39</span><div class="item-body"><div class="item-name">Pizza Struth</div><div class="item-desc">Tomatensoße, Käse, Salami, Schinken, Pilze, Dönerfleisch, Zwiebeln, Peperoni</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>9,00 €</span><span class="p2"><span class="plabel">28 cm</span>10,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">40</span><div class="item-body"><div class="item-name">Pizza-Spaghetti</div><div class="item-desc">Tomatensoße, Käse, Dönerfleisch, Spaghetti</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>8,50 €</span><span class="p2"><span class="plabel">28 cm</span>10,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">41</span><div class="item-body"><div class="item-name">Pizza Mafia</div><div class="item-desc">Tomatensoße, Käse, Schinken, Zwiebeln, Knoblauch, scharfe Peperoni</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">42</span><div class="item-body"><div class="item-name">Calzone</div><div class="item-desc">Tomatensoße, Käse, Schinken, Salami, Paprika</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">43</span><div class="item-body"><div class="item-name">Calzone II</div><div class="item-desc">Tomatensoße, Käse, Dönerfleisch</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>9,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">49</span><div class="item-body"><div class="item-name">Pizza Krabben</div><div class="item-desc">Tomatensoße, Käse, Zwiebeln, Krabben, Spezialsoße</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>9,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">51</span><div class="item-body"><div class="item-name">Pizza Döner</div><div class="item-desc">Tomatensoße, Käse, Zwiebeln, Dönerfleisch</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>9,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">52</span><div class="item-body"><div class="item-name">Pizza vegetarisch</div><div class="item-desc">Tomatensoße, Käse, Pilze, Artischocken, Broccoli, Zwiebeln</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">54</span><div class="item-body"><div class="item-name">Pizza Diavolo</div><div class="item-desc">Tomatensoße, Käse, Zwiebeln, Paprika, Peperoni</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,00 €</span><span class="p2"><span class="plabel">28 cm</span>8,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">56</span><div class="item-body"><div class="item-name">Kurdische Pizza</div><div class="item-desc">Tomatensoße, Hackfleisch, Zwiebeln, Dönerfleisch, Salat, Tomaten, Gurken, Spezialsoße</div></div><span class="item-price">10,00 €</span></div>
+    <div class="menu-item"><span class="item-num">60</span><div class="item-body"><div class="item-name">Pizza Spinaci</div><div class="item-desc">Tomatensoße, Käse, Spinat, Gorgonzola</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>8,50 €</span></div></div>
+    <div class="menu-item"><span class="item-num">62</span><div class="item-body"><div class="item-name">Quattro Formaggio</div><div class="item-desc">4 verschiedene Käsesorten</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>9,00 €</span><span class="p2"><span class="plabel">28 cm</span>10,00 €</span></div></div>
+    <div class="menu-item"><span class="item-num">64</span><div class="item-body"><div class="item-name">Quattro Stagioni</div><div class="item-desc">Tomatensoße, Käse, Schinken, Salami, Pilze, Artischocken</div></div><div class="price-two"><span class="p1"><span class="plabel">24 cm</span>7,50 €</span><span class="p2"><span class="plabel">28 cm</span>9,00 €</span></div></div>
+  </div>
+</section>
+
+<!-- PASTA -->
+<section class="menu-section" id="pasta">
+  <div class="section-header"><div class="section-icon">🍝</div><div><div class="section-title">Pasta / Nudeln</div><div class="section-subtitle">Spaghetti · Rigatoni · Tagliatelle · Tortellini · Gnocchi</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">67</span><div class="item-body"><div class="item-name">Spaghetti Napoli</div><div class="item-desc">mit Tomatensoße</div></div><span class="item-price">7,00 €</span></div>
+    <div class="menu-item"><span class="item-num">68</span><div class="item-body"><div class="item-name">Spaghetti Bolognese</div><div class="item-desc">mit Fleischsoße</div></div><span class="item-price">7,50 €</span></div>
+    <div class="menu-item"><span class="item-num">69</span><div class="item-body"><div class="item-name">Spaghetti Matriciani</div><div class="item-desc">mit Zwiebeln, Schinken, Tomatensoße, Sahne (scharf)</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">70</span><div class="item-body"><div class="item-name">Spaghetti Carbonara</div><div class="item-desc">Sahne, Parmesankäse, Schinken, Ei</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">71</span><div class="item-body"><div class="item-name">Spaghetti mit Dönerfleisch</div><div class="item-desc">Dönerfleisch, Parmesankäse und Sahnesoße</div></div><span class="item-price">8,50 €</span></div>
+    <div class="menu-item"><span class="item-num">72</span><div class="item-body"><div class="item-name">Spaghetti al Diavolo</div><div class="item-desc">Schinken, Pilze, Tomatensauce, Sahnesauce, sehr scharf</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">73</span><div class="item-body"><div class="item-name">Spaghetti Marinara</div><div class="item-desc">Meeresfrüchte, Tomatensauce, Knoblauch</div></div><span class="item-price">8,50 €</span></div>
+    <div class="menu-item"><span class="item-num">75</span><div class="item-body"><div class="item-name">Spaghetti Spinaci</div><div class="item-desc">Spinat, Gorgonzola, Sahnesoße</div></div><span class="item-price">8,50 €</span></div>
+    <div class="menu-item"><span class="item-num">76</span><div class="item-body"><div class="item-name">Rigatoni Napoli</div><div class="item-desc">mit Tomatensoße</div></div><span class="item-price">7,00 €</span></div>
+    <div class="menu-item"><span class="item-num">77</span><div class="item-body"><div class="item-name">Rigatoni Bolognese</div><div class="item-desc">mit Fleischsoße</div></div><span class="item-price">7,50 €</span></div>
+    <div class="menu-item"><span class="item-num">83</span><div class="item-body"><div class="item-name">Nudeln al Salmone</div><div class="item-desc">Spinat, Lachs, Knoblauch-Sahnesauce</div></div><span class="item-price">10,00 €</span></div>
+    <div class="menu-item"><span class="item-num">84</span><div class="item-body"><div class="item-name">Tortellini al Salmone</div><div class="item-desc">mit Lachs-Sahnesauce</div></div><span class="item-price">9,50 €</span></div>
+    <div class="menu-item"><span class="item-num">85</span><div class="item-body"><div class="item-name">Tortellini Napoli</div><div class="item-desc">mit Tomatensoße</div></div><span class="item-price">7,50 €</span></div>
+    <div class="menu-item"><span class="item-num">86</span><div class="item-body"><div class="item-name">Tortellini Bolognese</div><div class="item-desc">mit Fleischsoße</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">89</span><div class="item-body"><div class="item-name">Gnocchi alla Gorgonzola</div><div class="item-desc">Kartoffelklößchen in Gorgonzolasauce und Schinken</div></div><span class="item-price">8,00 €</span></div>
+    <div class="menu-item"><span class="item-num">99</span><div class="item-body"><div class="item-name">Combinazione</div><div class="item-desc">drei verschiedene Nudelsorten, Hackfleischsauce, Käse</div></div><span class="item-price">9,00 €</span></div>
+    <div class="menu-item"><span class="item-num">100</span><div class="item-body"><div class="item-name">Tortellini mit Dönerfleisch</div><div class="item-desc">Tomatensoße, Sahne, Käse</div></div><span class="item-price">10,00 €</span></div>
+  </div>
+</section>
+
+<!-- SCHNITZEL -->
+<section class="menu-section" id="schnitzel">
+  <div class="section-header"><div class="section-icon">🥩</div><div><div class="section-title">Schnitzel</div><div class="section-subtitle">alle mit Pommes und Salat</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">101</span><div class="item-body"><div class="item-name">Schnitzel "Wiener Art"</div><div class="item-desc">Pommes und Salat</div></div><span class="item-price">10,00 €</span></div>
+    <div class="menu-item"><span class="item-num">102</span><div class="item-body"><div class="item-name">Jägerschnitzel</div><div class="item-desc">Pilzsauce, Pommes und Salat</div></div><span class="item-price">10,50 €</span></div>
+    <div class="menu-item"><span class="item-num">103</span><div class="item-body"><div class="item-name">Rahmschnitzel</div><div class="item-desc">Rahmsauce, Pommes und Salat</div></div><span class="item-price">10,50 €</span></div>
+    <div class="menu-item"><span class="item-num">104</span><div class="item-body"><div class="item-name">Zigeunerschnitzel</div><div class="item-desc">pikante Zigeunersauce, Pommes und Salat</div></div><span class="item-price">10,50 €</span></div>
+    <div class="menu-item"><span class="item-num">105</span><div class="item-body"><div class="item-name">Schnitzel alla Chef</div><div class="item-desc">Schinken, Käse, Sahnesoße, Pommes, Salat</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">106</span><div class="item-body"><div class="item-name">Schnitzel Cabrese</div><div class="item-desc">frische Tomaten, Mozzarella, Käse überbacken, Pommes, Salat</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">107</span><div class="item-body"><div class="item-name">Hawaii-Schnitzel</div><div class="item-desc">Schinken, Ananas, Sahnesauce, Käse überbacken, Pommes, Salat</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">108</span><div class="item-body"><div class="item-name">Schnitzel Bolognese</div><div class="item-desc">Schinken, Käse, Hackfleischsauce, Pommes, Salat</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">109</span><div class="item-body"><div class="item-name">Schnitzel Würzfleisch</div><div class="item-desc">mit Käse überbacken, Pommes, Salat</div></div><span class="item-price">11,50 €</span></div>
+    <div class="menu-item"><span class="item-num">110</span><div class="item-body"><div class="item-name">Schnitzel Gorgonzola</div><div class="item-desc">mit Gorgonzola und Sahnesoße, Pommes, Salat</div></div><span class="item-price">11,00 €</span></div>
+    <div class="menu-item"><span class="item-num">113</span><div class="item-body"><div class="item-name">Schnitzel Dönerfleisch</div><div class="item-desc">Champignons, Paprika, Zwiebeln, Käse überbacken, Pizzabrot und Salat</div></div><span class="item-price">13,00 €</span></div>
+  </div>
+</section>
+
+<!-- INDISCH -->
+<section class="menu-section" id="indisch">
+  <div class="section-header"><div class="section-icon">🍛</div><div><div class="section-title">Indische Gerichte</div><div class="section-subtitle">alle mit Pommes und Salat</div></div></div>
+  <div class="items-grid">
+    <div class="menu-item"><span class="item-num">114</span><div class="item-body"><div class="item-name">Chicken Curry</div><div class="item-desc">Hähnchen mit Curry, Pommes und Salat</div></div><span class="item-price">13,00 €</span></div>
+    <div class="menu-item"><span class="item-num">115</span><div class="item-body"><div class="item-name">Murg Palak</div><div class="item-desc">Hähnchenfleisch mit Spinat, Pommes und Salat</div></div><span class="item-price">13,00 €</span></div>
+    <div class="menu-item"><span class="item-num">116</span><div class="item-body"><div class="item-name">Chicken Bhuna</div><div class="item-desc">Hähnchenfleisch mit Zwiebeln, Knoblauch, Ingwer, grünem Paprika, gebraten, Pommes und Salat</div></div><span class="item-price">14,00 €</span></div>
+    <div class="menu-item"><span class="item-num">117</span><div class="item-body"><div class="item-name">Chicken Vindallo</div><div class="item-desc">Hähnchenfleisch mit sehr scharfer Vindallosoße, Pommes und Salat</div></div><span class="item-price">13,00 €</span></div>
+    <div class="menu-item"><span class="item-num">118</span><div class="item-body"><div class="item-name">Gemüsepfanne vegetarisch</div><div class="item-desc">Zucchini, Pilze, Tomaten, Peperoni, Paprika, Erbsen, Knoblauch, Käse überbacken und Pizzabrot</div></div><span class="item-price">11,00 €</span></div>
+  </div>
+</section>
+
+<!-- GETRÄNKE -->
+<section class="menu-section" id="getraenke">
+  <div class="section-header"><div class="section-icon">🥤</div><div><div class="section-title">Getränke</div></div></div>
+  <div class="drinks-grid">
+    <div class="drink-card"><div class="drink-icon">🥤</div><div class="drink-name">0,33 l</div><div class="drink-price">2,50 €</div></div>
+    <div class="drink-card"><div class="drink-icon">🧃</div><div class="drink-name">0,5 l</div><div class="drink-price">3,00 €</div></div>
+    <div class="drink-card"><div class="drink-icon">🍶</div><div class="drink-name">1,25 l</div><div class="drink-price">3,75 €</div></div>
+    <div class="drink-card"><div class="drink-icon">☕</div><div class="drink-name">Tasse Tee</div><div class="drink-price">1,00 €</div></div>
+  </div>
+  <div class="callout" style="margin-top:1rem;">💡 Extrabeilagen: +1,00 € &nbsp;|&nbsp; Käse, Thunfisch, Dönerfleisch, Krabben: +1,50 €</div>
+</section>
+
+<!-- BEWERTUNGEN -->
+<section class="menu-section" id="bewertungen">
+  <div class="section-header"><div class="section-icon">⭐</div><div><div class="section-title">Bewertungen</div><div class="section-subtitle">Teile deine Erfahrung mit uns!</div></div></div>
+
+  <div class="avg-box" id="avgBox" style="display:none">
+    <div class="avg-num" id="avgNum">0.0</div>
+    <div><div class="avg-stars" id="avgStars"></div><div class="avg-count" id="avgCount"></div></div>
+  </div>
+
+  <div style="margin-bottom:1.2rem;">
+    <div class="admin-bar" id="adminLoginBar">
+      <input class="admin-input" type="password" id="adminPwInput" placeholder="🔑 Admin-Passwort" onkeydown="if(event.key==='Enter')adminLogin()">
+      <button class="btn-admin" onclick="adminLogin()">Einloggen</button>
+      <span class="admin-msg" id="adminMsg" style="display:none"></span>
+    </div>
+    <div style="display:none;align-items:center;gap:.7rem;flex-wrap:wrap;" id="adminPanel">
+      <span class="badge-admin">🔓 Admin-Modus aktiv</span>
+      <button class="btn-admin" onclick="adminLogout()" style="background:#777">Ausloggen</button>
+      <small style="color:var(--muted);font-weight:700;">Klicke 🗑️ um Bewertungen zu löschen</small>
+    </div>
+  </div>
+
+  <div class="review-form-box">
+    <h3>✍️ Jetzt bewerten</h3>
+    <div class="star-row" id="starRow">
+      <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+    </div>
+    <div class="spam-msg" id="spamMsg">⚠️ Bitte warte ein paar Minuten vor der nächsten Bewertung.</div>
+    <input class="form-input" type="text" id="rName" placeholder="Dein Name (z.B. Max M.)" maxlength="40">
+    <textarea class="form-input" id="rText" rows="3" placeholder="Dein Kommentar..." maxlength="400" style="resize:vertical"></textarea>
+    <button class="btn-submit" id="btnSubmit" onclick="submitReview()">Bewertung abschicken ⭐</button>
+  </div>
+
+  <div class="reviews-list" id="reviewsList"></div>
+  <div class="no-reviews" id="noReviews">Noch keine Bewertungen. Sei der Erste! 🌟</div>
+</section>
+
+</main>
+
+<footer>
+  <h2>Med-Grill</h2>
+  <div class="footer-tel">📞 036 026 / 97 5 88</div>
+  <div class="footer-grid">
+    <div class="footer-block"><h3>🕐 Öffnungszeiten</h3><p>Montag – Freitag: 11:00 – 21:30 Uhr<br>Samstag &amp; Sonntag: 14:00 – 21:30 Uhr</p></div>
+    <div class="footer-block"><h3>🚚 Lieferservice</h3><p>Ab 50,– € Bestellwert nach Absprache<br><strong style="color:#ffc107;">036 026 / 97 5 88</strong></p></div>
+  </div>
+  <p style="color:var(--yellow);font-family:'Bangers',cursive;font-size:1.5rem;letter-spacing:.05em;">Wir wünschen GUTEN APPETIT! 🍽️</p>
+  <p class="footer-note">© Med-Grill · Alle Preise inkl. MwSt.</p>
+</footer>
+
+<script>
+const ADMIN_PW = "MedGrill2024!";
+const COOLDOWN_MS = 5 * 60 * 1000;
+let reviews = [];
+let selectedStars = 0;
+let isAdmin = false;
+let lastSubmitTime = 0;
+
+function sanitize(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+document.querySelectorAll('#starRow span').forEach(s => {
+  s.addEventListener('click', () => { selectedStars = +s.dataset.v; renderStarInput(); });
+  s.addEventListener('mouseover', () => {
+    const v = +s.dataset.v;
+    document.querySelectorAll('#starRow span').forEach((x,i) => { x.textContent = i<v?'★':'☆'; x.style.color = i<v?'#f39c12':'#ccc'; });
+  });
+  s.addEventListener('mouseout', renderStarInput);
+});
+function renderStarInput() {
+  document.querySelectorAll('#starRow span').forEach((x,i) => { x.textContent = i<selectedStars?'★':'☆'; x.style.color = i<selectedStars?'#f39c12':'#ccc'; });
+}
+function starStr(n) { return '★'.repeat(n)+'☆'.repeat(5-n); }
+
+function submitReview() {
+  const name = document.getElementById('rName').value.trim();
+  const text = document.getElementById('rText').value.trim();
+  if (!selectedStars) { alert('Bitte Sterne vergeben!'); return; }
+  if (!name) { alert('Bitte Namen eingeben!'); return; }
+  if (!text) { alert('Bitte Kommentar schreiben!'); return; }
+  const now = Date.now();
+  if (now - lastSubmitTime < COOLDOWN_MS) { document.getElementById('spamMsg').style.display='block'; return; }
+  document.getElementById('spamMsg').style.display='none';
+  const spamW = ['http','www.','.com','.de','<script','viagra','casino'];
+  if (spamW.some(w=>(name+text).toLowerCase().includes(w))) { alert('Ungültige Eingabe.'); return; }
+  reviews.unshift({ id:now, name:sanitize(name), text:sanitize(text), stars:selectedStars, date:new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) });
+  lastSubmitTime = now;
+  saveReviews(); renderAll();
+  document.getElementById('rName').value='';
+  document.getElementById('rText').value='';
+  selectedStars=0; renderStarInput();
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled=true; btn.textContent='✅ Danke!';
+  setTimeout(()=>{ btn.disabled=false; btn.textContent='Bewertung abschicken ⭐'; }, 3000);
+}
+
+function deleteReview(id) {
+  if (!isAdmin) return;
+  if (!confirm('Bewertung wirklich löschen?')) return;
+  reviews = reviews.filter(r=>r.id!==id);
+  saveReviews(); renderAll();
+}
+
+function renderAll() {
+  const list = document.getElementById('reviewsList');
+  const none = document.getElementById('noReviews');
+  const avgBox = document.getElementById('avgBox');
+  if (!reviews.length) { list.innerHTML=''; none.style.display='block'; avgBox.style.display='none'; return; }
+  none.style.display='none'; avgBox.style.display='flex';
+  const avg=(reviews.reduce((s,r)=>s+r.stars,0)/reviews.length).toFixed(1);
+  document.getElementById('avgNum').textContent=avg;
+  document.getElementById('avgStars').textContent=starStr(Math.round(avg));
+  document.getElementById('avgCount').textContent=reviews.length+' Bewertung'+(reviews.length>1?'en':'');
+  list.innerHTML=reviews.map(r=>`
+    <div class="review-card">
+      <div class="rc-header">
+        <div class="rc-avatar">${r.name.charAt(0).toUpperCase()}</div>
+        <div><div class="rc-name">${r.name}</div><div class="rc-date">${r.date}</div></div>
+      </div>
+      <div class="rc-stars">${starStr(r.stars)}</div>
+      <div class="rc-text">${r.text}</div>
+      ${isAdmin?`<button class="btn-delete" onclick="deleteReview(${r.id})" title="Löschen">🗑️</button>`:''}
+    </div>`).join('');
+}
+
+function saveReviews(){ try{localStorage.setItem('mg_reviews',JSON.stringify(reviews));}catch(e){} }
+function loadReviews(){ try{const d=localStorage.getItem('mg_reviews');if(d)reviews=JSON.parse(d).filter(r=>r.id&&r.name&&r.text&&r.stars>=1&&r.stars<=5);}catch(e){reviews=[];} }
+
+function adminLogin() {
+  const pw = document.getElementById('adminPwInput').value;
+  const msg = document.getElementById('adminMsg');
+  if (pw === ADMIN_PW) {
+    isAdmin=true;
+    document.getElementById('adminLoginBar').style.display='none';
+    document.getElementById('adminPanel').style.display='flex';
+    msg.style.display='none';
+    renderAll();
+  } else {
+    msg.className='admin-msg err'; msg.textContent='❌ Falsches Passwort'; msg.style.display='inline-block';
+    setTimeout(()=>{msg.style.display='none';},2500);
+  }
+  document.getElementById('adminPwInput').value='';
+}
+function adminLogout() {
+  isAdmin=false;
+  document.getElementById('adminLoginBar').style.display='flex';
+  document.getElementById('adminPanel').style.display='none';
+  renderAll();
+}
+
+function goTo(id,event) {
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+const sections=['doener','salate','gemuese','pizza','pasta','schnitzel','indisch','getraenke','bewertungen'];
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ const i=sections.indexOf(e.target.id); document.querySelectorAll('.nav-btn').forEach((b,j)=>b.classList.toggle('active',i===j)); } });
+},{threshold:0.3});
+sections.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+
+loadReviews(); renderAll(); renderStarInput();
+</script>
+</body>
+</html>
